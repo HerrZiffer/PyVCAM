@@ -371,7 +371,20 @@ class Camera:
         frame, fps, frame_count = pvc.get_frame(self.__handle, self.__shape[0], self.__shape[1], self.__bits_per_pixel)
 
         frame['pixel_data'] = frame['pixel_data'].reshape(self.__shape[1], self.__shape[0])
-        frame['pixel_data'] = np.copy(frame['pixel_data'])
+        return frame, fps, frame_count
+
+    def poll_latest_frame(self):
+        """Calls the pvc.get_latest_frame function with the current camera settings.
+
+        Parameter:
+            None
+        Returns:
+            A dictionary with the frame containing available meta data and 2D np.array pixel data, frames per second and frame count.
+        """
+
+        frame, fps, frame_count = pvc.get_latest_frame(self.__handle, self.__shape[0], self.__shape[1], self.__bits_per_pixel)
+
+        frame['pixel_data'] = frame['pixel_data'].reshape(self.__shape[1], self.__shape[0])
         return frame, fps, frame_count
 
     def get_frame(self, exp_time=None):

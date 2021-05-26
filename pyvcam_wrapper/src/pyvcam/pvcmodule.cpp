@@ -724,22 +724,11 @@ pvc_check_frame_status(PyObject *self, PyObject *args)
     return PyUnicode_FromString(statusStr);
 }
 
+// If oldestFrame is true, the first (oldest) frame of the queue is returned and popped from the queue.
+// if oldestFrame is false, the last (newest) frame of the queue is returned and no pop occurs.
 static PyObject *
-pvc_get_frame(PyObject *self, PyObject *args)
+get_frame(int16 hCam, int16 dimX, int16 dimY, int16 bitsPerPixel, bool oldestFrame)
 {
-    /* TODO: Make setting acquisition apart of this function. Do not make them
-    pass into the function call as arguments.
-    */
-    int16 hCam;                /* Camera handle. */
-    int16 dimX;             /* Pixels in x direction */
-    int16 dimY;             /* Pixels in y direction */
-    volatile int16 bitsPerPixel; /* Bits per pixel bitsPerPixel must be marked volatile to be populated correctly for reasons unknown */
-
-    if (!PyArg_ParseTuple(args, "hhhh", &hCam, &dimX, &dimY, &bitsPerPixel)) {
-        PyErr_SetString(PyExc_ValueError, "Invalid parameters.");
-        return NULL;
-    }
-
     import_array();  /* Initialize PyArrayObject. */
     int dimensions = 1;
     npy_intp numPixels = dimX * dimY;
@@ -817,17 +806,21 @@ pvc_get_frame(PyObject *self, PyObject *args)
             return NULL;
         }
 
-        Frame_T frame = camInstance.frameQueue_.front();
-        camInstance.frameQueue_.pop();
+        Frame_T frame = (oldestFrame) ? camInstance.frameQueue_.front() : camInstance.frameQueue_.back();
+
+        if (oldestFrame)
+        {
+            camInstance.frameQueue_.pop();
+        }
 
         //printf("New Data FPS: %f Cnt: %d\r\n", camInstance.fps_, frame.count);
 
         // Toggle newData_ flag unless we are in sequence mode and another frame is available
         camInstance.newData_ = camInstance.seqMode_ && !camInstance.frameQueue_.empty();
-        
+
         PyObject *frameDict = PyDict_New();
         PyObject* numpy_frame;
-        
+
         if (camInstance.metaDataEnabled_) {
 
             camInstance.initializeMetaData();
@@ -926,6 +919,44 @@ pvc_get_frame(PyObject *self, PyObject *args)
         PyErr_SetString(PyExc_KeyError, oor.what());
         return NULL;
     }
+}
+
+static PyObject *
+pvc_get_frame(PyObject *self, PyObject *args)
+{
+    /* TODO: Make setting acquisition apart of this function. Do not make them
+    pass into the function call as arguments.
+    */
+    int16 hCam;                /* Camera handle. */
+    int16 dimX;             /* Pixels in x direction */
+    int16 dimY;             /* Pixels in y direction */
+    volatile int16 bitsPerPixel; /* Bits per pixel bitsPerPixel must be marked volatile to be populated correctly for reasons unknown */
+
+    if (!PyArg_ParseTuple(args, "hhhh", &hCam, &dimX, &dimY, &bitsPerPixel)) {
+        PyErr_SetString(PyExc_ValueError, "Invalid parameters.");
+        return NULL;
+    }
+
+    return get_frame(hCam, dimX, dimY, bitsPerPixel, true);
+}
+
+static PyObject *
+pvc_get_latest_frame(PyObject *self, PyObject *args)
+{
+    /* TODO: Make setting acquisition apart of this function. Do not make them
+    pass into the function call as arguments.
+    */
+    int16 hCam;                /* Camera handle. */
+    int16 dimX;             /* Pixels in x direction */
+    int16 dimY;             /* Pixels in y direction */
+    volatile int16 bitsPerPixel; /* Bits per pixel bitsPerPixel must be marked volatile to be populated correctly for reasons unknown */
+
+    if (!PyArg_ParseTuple(args, "hhhh", &hCam, &dimX, &dimY, &bitsPerPixel)) {
+        PyErr_SetString(PyExc_ValueError, "Invalid parameters.");
+        return NULL;
+    }
+
+    return get_frame(hCam, dimX, dimY, bitsPerPixel, false);
 }
 
 static PyObject *
@@ -1317,6 +1348,10 @@ static PyMethodDef PvcMethods[] = {
         check_frame_status_docstring},
     {"get_frame",
         pvc_get_frame,
+        METH_VARARGS,
+        get_frame_docstring},
+    {"get_latest_frame",
+        pvc_get_latest_frame,
         METH_VARARGS,
         get_frame_docstring},
     {"start_live",

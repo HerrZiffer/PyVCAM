@@ -69,6 +69,7 @@ static PyObject *pvc_start_live(PyObject *self, PyObject *args);
 static PyObject *pvc_start_seq(PyObject *self, PyObject *args);
 static PyObject *pvc_check_frame_status(PyObject *self, PyObject *args);
 static PyObject *pvc_get_frame(PyObject *self, PyObject *args);
+static PyObject *pvc_get_latest_frame(PyObject *self, PyObject *args);
 static PyObject *pvc_stop_live(PyObject *self, PyObject *args);
 static PyObject *pvc_finish_seq(PyObject *self, PyObject *args);
 static PyObject *pvc_abort(PyObject *self, PyObject *args);
